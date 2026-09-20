@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🌸 Private Cute Multiplayer Maze Race 🌸</title>
+    <title>🌸 Cute Multiplayer Maze Race 🌸</title>
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <style>
         * {
@@ -21,6 +21,76 @@
             padding: 15px;
             position: relative;
             overflow-x: hidden;
+        }
+
+        /* Password Gate Modal Overlay */
+        #authOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255, 230, 240, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-card {
+            background: white;
+            padding: 30px;
+            border-radius: 25px;
+            border: 3px solid #ffb7c5;
+            box-shadow: 0 10px 30px rgba(255, 105, 180, 0.3);
+            text-align: center;
+            max-width: 360px;
+            width: 90%;
+        }
+
+        .auth-card h3 {
+            color: #b36b8a;
+            margin-bottom: 8px;
+            font-size: 20px;
+        }
+
+        .auth-card input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 20px;
+            border: 2px solid #ffc0d0;
+            margin: 15px 0 10px 0;
+            font-family: inherit;
+            font-size: 15px;
+            text-align: center;
+            outline: none;
+            text-transform: uppercase;
+        }
+
+        .auth-card button {
+            width: 100%;
+            padding: 11px;
+            border-radius: 20px;
+            border: none;
+            background: linear-gradient(135deg, #ffb7c5, #ff9eb5);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .auth-card button:hover {
+            transform: scale(1.02);
+        }
+
+        .auth-error {
+            color: #e04b77;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+            font-weight: bold;
         }
 
         .main-container {
@@ -108,7 +178,7 @@
             font-size: min(16px, 2.5vw);
         }
 
-        /* Player token styling without reset animations to prevent disappearing glitch */
+        /* Player token styling without reset animations */
         .player {
             position: absolute;
             width: 85%;
@@ -212,7 +282,7 @@
             border-color: #ff9eb5;
         }
 
-        /* 4 Animal Selection Picker */
+        /* 4 Animal Choices */
         .char-choice-row {
             display: flex;
             align-items: center;
@@ -282,7 +352,6 @@
         .start-game-btn, .reset-btn { width: 100%; margin-top: 8px; padding: 10px; }
         .reset-btn { background: #ffd4e0; }
 
-        /* Online Connection Box */
         .connection-panel {
             background: rgba(255, 245, 250, 0.98);
             padding: 12px;
@@ -336,6 +405,18 @@
     </style>
 </head>
 <body>
+
+    <!-- Private Access Lock Screen -->
+    <div id="authOverlay">
+        <div class="auth-card">
+            <h3>🔒 Secret Friend Access</h3>
+            <p style="font-size: 13px; color: #8c5d73;">Enter your group passcode to play:</p>
+            <input type="text" id="passcodeInput" placeholder="ENTER CODE" autocomplete="off" autocapitalize="characters" autofocus>
+            <button onclick="checkAccess()">✨ Enter Game ✨</button>
+            <div id="authError" class="auth-error">❌ Incorrect passcode! Try again.</div>
+        </div>
+    </div>
+
     <div class="main-container">
         <div class="game-section" id="gameSection">
             <div class="game-wrapper">
@@ -347,7 +428,7 @@
         
         <div class="controls-section">
             <div class="info-panel">
-                <div class="status" id="statusMsg">🔒 Private Maze Ready!</div>
+                <div class="status" id="statusMsg">🎀 Game Ready! 🎀</div>
                 <button class="fullscreen-btn" onclick="toggleGameFullscreen()">🎮 Fullscreen Maze</button>
                 <div class="mode-selector">
                     <button class="mode-btn active" onclick="setGameMode('local')">🏠 Local</button>
@@ -385,42 +466,50 @@
     </div>
 
     <script>
+// ==========================================
+        // 🔒 MULTIPLE ACCEPTED PASSWORDS
+        // Add as many uppercase codes as you want!
         // ==========================================
-        // 🔒 1. PRIVATE ACCESS GATE FOR YOU & FRIENDS
-        // Change "bunny42" to any custom password you want!
-        // ==========================================
-        const FRIENDS_SECRET_PASSWORD = "bunny42";
+        const VALID_PASSWORDS = [
+            "KTTRON",
+            "MAFIA TIRTH",
+            "RIKUO",
+            "RAVI",
+            "RANDOM"
+        ];
 
-        (function authenticateUser() {
-            if (sessionStorage.getItem("maze_authorized") === "true") return;
+        function checkAccess() {
+            const input = document.getElementById("passcodeInput");
+            const val = input.value.trim().toUpperCase(); // Automatically converts user input to uppercase
+            const err = document.getElementById("authError");
 
-            let attempt = prompt("🔒 Enter the secret password to enter the Maze with your friends:");
-            while (attempt !== FRIENDS_SECRET_PASSWORD) {
-                if (attempt === null) {
-                    document.body.innerHTML = `
-                        <div style="text-align:center; margin-top:20%; font-family:sans-serif; color:#b36b8a;">
-                            <h2>🌸 Private Session: Access Denied 🌸</h2>
-                            <p>Ask the host for the group password!</p>
-                        </div>`;
-                    throw new Error("Unauthorized");
-                }
-                attempt = prompt("❌ Incorrect password! Please try again:");
+            if (VALID_PASSWORDS.includes(val)) {
+                sessionStorage.setItem("maze_authorized", "true");
+                document.getElementById("authOverlay").style.display = "none";
+                initGameSession();
+            } else {
+                err.style.display = "block";
+                input.value = "";
+                input.focus();
             }
-            sessionStorage.setItem("maze_authorized", "true");
-        })();
+        }
+
+        document.getElementById("passcodeInput").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") checkAccess();
+        });
 
         // ==========================================
-        // 🐾 2. FOUR POPULAR ANIMAL CHARACTERS
+        // 🐾 4 POPULAR ANIMAL CHARACTERS
         // ==========================================
         const AVAILABLE_ANIMALS = [
-            { key: 'dog', name: 'Doggy', emoji: '🐶' },
+            { key: 'dog', name: 'Puppy', emoji: '🐶' },
             { key: 'cat', name: 'Kitty', emoji: '🐱' },
             { key: 'panda', name: 'Panda', emoji: '🐼' },
             { key: 'fox', name: 'Foxxy', emoji: '🦊' }
         ];
 
         // ==========================================
-        // 🌟 3. FIVE GUARANTEED PROGRESSIVE LEVELS
+        // 🌟 5 PROGRESSIVE LEVELS
         // ==========================================
         const LEVELS = [
             { name: "🌸 Garden Maze", scale: 0.65 },
@@ -449,7 +538,6 @@
         let peer = null;
         let connections = [];
 
-        // Track selected animal per player slot (defaulting to slots 0, 1, 2, 3)
         let playerAnimalSelections = { 1: 0, 2: 1, 3: 2, 4: 3 };
 
         const playerControls = {
@@ -459,11 +547,10 @@
             4: { up: 't', down: 'g', left: 'f', right: 'h' }
         };
 
-        // Screen-responsive grid calculation
         function calculateScreenGrid() {
             const container = document.getElementById('gameContainer');
-            const w = container.clientWidth || (window.innerWidth - 60);
-            const h = container.clientHeight || (window.innerHeight - 100);
+            const w = container.clientWidth || 400;
+            const h = container.clientHeight || 400;
 
             const baseCell = 28 / (LEVELS[currentLevel].scale || 1);
             let c = Math.floor((w - 20) / baseCell);
@@ -476,7 +563,6 @@
             ROWS = r;
         }
 
-        // DFS Maze generation ensures path is guaranteed open and solvable
         function generateGuaranteedMaze(r, c) {
             let grid = Array.from({ length: r }, () => Array(c).fill(1));
 
@@ -506,8 +592,8 @@
             board.innerHTML = '';
 
             const container = document.getElementById('gameContainer');
-            const availW = container.clientWidth - 20;
-            const availH = container.clientHeight - 20;
+            const availW = (container.clientWidth || 400) - 20;
+            const availH = (container.clientHeight || 400) - 20;
             const cellSize = Math.max(12, Math.floor(Math.min(availW / COLS, availH / ROWS)));
 
             board.style.gridTemplateColumns = `repeat(${COLS}, ${cellSize}px)`;
@@ -541,7 +627,7 @@
                 row.className = 'char-choice-row';
 
                 const label = document.createElement('span');
-                label.textContent = gameMode === 'online' ? 'Your Character:' : `Player ${i}:`;
+                label.textContent = gameMode === 'online' ? 'Your Animal:' : `Player ${i}:`;
                 row.appendChild(label);
 
                 const opts = document.createElement('div');
@@ -576,7 +662,6 @@
             }
         }
 
-        // Prevents disappearing glitch: reuse DOM nodes rather than deleting and recreating on step
         function updatePlayerPositions() {
             players.forEach(player => {
                 if (!player.active || !gameStarted) return;
@@ -758,9 +843,9 @@
             peer.on('open', (id) => {
                 panel.innerHTML = `
                     <div class="connection-panel">
-                        <strong>🎀 Private Invite Link 🎀</strong>
+                        <strong>🎀 Private Room Link 🎀</strong>
                         <div class="link-box" id="inviteLink">${window.location.origin}${window.location.pathname}?join=${id}</div>
-                        <button onclick="navigator.clipboard.writeText(document.getElementById('inviteLink').textContent); alert('Link copied to clipboard! Send it to your friend.')">📋 Copy Private Link</button>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('inviteLink').textContent); alert('Link copied to clipboard! Send to your friends.')">📋 Copy Private Link</button>
                         <input type="text" id="joinId" placeholder="Paste friend's Peer ID">
                         <button onclick="joinGame()">🚀 Join Room</button>
                     </div>
@@ -851,7 +936,6 @@
             }
         }
 
-        // Global Keyboard Controls
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && isGameFullscreen) toggleGameFullscreen();
 
@@ -881,8 +965,14 @@
             updatePlayerPositions();
         });
 
-        window.addEventListener('load', () => {
+        function initGameSession() {
             initLocalMode();
+            setTimeout(() => {
+                calculateScreenGrid();
+                createBoard();
+                updatePlayerPositions();
+            }, 50);
+
             const urlParams = new URLSearchParams(window.location.search);
             const joinParam = urlParams.get('join');
             if (joinParam) {
@@ -894,6 +984,13 @@
                         joinGame();
                     }
                 }, 1200);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            if (sessionStorage.getItem("maze_authorized") === "true") {
+                document.getElementById("authOverlay").style.display = "none";
+                initGameSession();
             }
         });
     </script>
